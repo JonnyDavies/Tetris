@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Jonny Davies</title>
+    <style>
+        canvas {
+            background: #f2f2f2;
+            float: left;
+            margin-left: 16em;
+            border-style: solid;
+            border-width: 5px;
+            border-color: #333333;
+        }
+
+        button {
+            background-color: black;
+            border: none;
+            color: white !important;
+            padding: 15px 32px;
+            text-align: center;
+            width: 150px;
+            text-decoration: none;
+            font-size: 16px;
+            margin-top: 0em;
+        }
+
+        #myCanvas {
+            display: inline-block;
+        }
+
+        #text {
+            display: inline-block;
+        }
+
+        .score {
+            display: inline-block;
+            font-weight: bold;
+            font-family: Arial;
+        }
+
+        #board {
+            display: inline-block;
+            font-weight: bold;
+            font-family: Arial;
+            font-size: 1.5em;
+        }
+
+        .play {
+            margin-left: 26em;
+        }
+
+        #text {
+            display: inline-block;
+        }
+
+        #scoreNumber {
+            padding-left: 1em;
+            display: inline-block;
+            padding-right: 1em;
+        }
+
+        #scoreLabel {
+            padding-left: 1em;
+            display: inline-block;
+        }
+
+        .instruct {
+            padding-top: 1em;
+            padding-left: 1em;
+        }
+
+    </style>
+    <link type="text/css" rel="stylesheet" href="../css/main.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="lazy_load/jquery.lazyload.min.js?v=3" type="text/javascript" charset="utf-8"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+
+        <div id="post" class="container">
+
+            <div class="row">
+                <div class="col-lg-12">
+
+                    <!-- Modal -->
+                    <div id="myModal" class="modal fade" role="dialog">
+                        <div class="modal-dialog">
+                            <!-- Modal content-->
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                    <h4 class="modal-title">Game Over</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Would you like to try again?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <div class="btn-group">
+                                        <button id="Yes" type="button" class="btn btn-default" data-dismiss="modal">
+                                            Yes
+                                        </button>
+                                        <button id="No" class="btn btn-default" data-dismiss="modal">No</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Modal -->
+
+                    <h2 id="postHeading">Tetris</h2>
+                    <div id="board">
+                        <canvas id="myCanvas" width="360" height="600"></canvas>
+                        <label id="scoreLabel" class="score">Score:</label>
+                        <div id="scoreNumber" class="score"></div>
+                        <label class="instruct"> Move: <span class="glyphicon glyphicon-arrow-left"></span>, <span
+                                class="glyphicon glyphicon-arrow-right"></span>, <span
+                                class="glyphicon glyphicon-arrow-down"></span></label>
+                        <label class="instruct"> Rotate: Space</label>
+
+                    </div>
+
+                    <div class="score">
+                        <button class="play">Resume</button>
+                        <button class="pause">Pause</button>
+                    </div>
+                    <div id="text"></div>
+                </div>
+
+</body>
+<script src="lazy_load/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript" charset="utf-8">
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    var squareOutlineWidth = 30;
+    var squareOutlineHeight = 30;
+    var lockedRight = false;
+    var lockedLeft = false;
+    var lockedDown = false;
+    var lockedRotate = false;
+
+    var rightPressed = false;
+    var leftPressed = false;
+    var spacePressed = false;
+    var downPressed = false;
+    var x = 0;
+    var y = 150;
+    var rotate = false;
+    var firstMove = true;
+    var numSquares = 1;
+    var t = "";
+    var highestPiece = canvas.height;
+    var s = '';
+    var currentRotation;
+    var initialMove = true;
+    var shapes = {1: 'I', 2: 'J', 3: 'L', 4: 'O', 5: 'S', 6: 'T', 7: 'Z'};
+    var r;
+    var initialRotation = false;
+    var forwardThree = false;
+    var backwardThree = false;
+    var pieceColour;
+    var a = [];
+    var speed = 1000;
+    var interval;
+    var score = 0;
+    var isPaused;
+
+    document.getElementById('scoreNumber').innerHTML = score.toString();
+
+    var defaultZPieceLength = 2;
+    var defaultZPieceRowTwoStart = 1;
+    var defaultZFirstRow = 2;
+    var defaultZSecondRow = 2;
+    var defaultZThirdRow = 0;
+    var defaultZFourthRow = 0;
+
+    var posTwoZPieceLength = 3;
+    var posTwoZPieceRowTwoStart = 2;
+    var posTwoZFirstRow = 1;
+    var posTwoZSecondRow = 2;
+    var posTwoZThirdRow = 1;
+    var posTwoZFourthRow = 0;
+
+    var defaultIPieceLength = 1;
+    var defaultIPieceRowTwoStart = 0;
+    var defaultIFirstRow = 4;
+    var defaultISecondRow = 0;
+    var defaultIThirdRow = 0;
+    var defaultIFourthRow = 0;
+
+    var posTwoIPieceLength = 4;
+    var posTwoIPieceRowTwoStart = 1;
+    var posTwoIFirstRow = 1;
+    var posTwoISecondRow = 1;
+    var posTwoIThirdRow = 1;
+    var posTwoIFourthRow = 1;
+
+    var posThreeIPieceLength = 3;
+    var posThreeIPieceRowTwoStart = 1;
+    var posThreeIFirstRow = 0;
+    var posThreeISecondRow = 0;
+    var posThreeIThirdRow = 4;
+    var posThreeIFourthRow = 0;
+
+    var posFourIPieceLength = 4;
+    var posFourIPieceRowTwoStart = 1;
+    var posFourIFirstRow = 1;
+    var posFourISecondRow = 1;
+    var posFourIThirdRow = 1;
+    var posFourIFourthRow = 1;
+
+    var defaultTPieceLength = 2;
+    var defaultTPieceRowTwoStart = 2;
+    var defaultTFirstRow = 1;
+    var defaultTSecondRow = 3;
+    var defaultTThirdRow = 0;
+    var defaultTFourthRow = 0;
+
+    var posTwoTPieceLength = 3;
+    var posTwoTPieceRowTwoStart = 0;
+    var posTwoTFirstRow = 1;
+    var posTwoTSecondRow = 2;
+    var posTwoTThirdRow = 1;
+    var posTwoTFourthRow = 0;
+
+    var posThreeTPieceLength = 3;
+    var posThreeTPieceRowTwoStart = 3;
+    var posThreeTFirstRow = 0;
+    var posThreeTSecondRow = 3;
+    var posThreeTThirdRow = 1;
+    var posThreeTFourthRow = 0;
+
+    var posFourthTPieceLength = 3;
+    var posFourthTPieceRowTwoStart = 2;
+    var posFourthTFirstRow = 1;
+    var posFourthTSecondRow = 2;
+    var posFourthTThirdRow = 1;
+    var posFourthTFourthRow = 0;
+
+    var defaultOPieceLength = 2;
+    var defaultOPieceRowTwoStart = 2;
+    var defaultOFirstRow = 2;
+    var defaultOSecondRow = 2;
+    var defaultOThirdRow = 0;
+    var defaultOFourthRow = 0;
+
+    var defaultJPieceLength = 2;
+    var defaultJPieceRowTwoStart = 1;
+    var defaultJFirstRow = 1;
+    var defaultJSecondRow = 3;
+    var defaultJThirdRow = 0;
+    var defaultJFourthRow = 0;
+
+    var posTwoJPieceLength = 3;
+    var posTwoJPieceRowTwoStart = 0;
+    var posTwoJFirstRow = 2;
+    var posTwoJSecondRow = 1;
+    var posTwoJThirdRow = 1;
+    var posTwoJFourthRow = 0;
+
+    var posThreeJPieceLength = 2;
+    var posThreeJPieceRowTwoStart = 1;
+    var posThreeJFirstRow = 3;
+    var posThreeJSecondRow = 1;
+    var posThreeJThirdRow = 1;
+    var posThreeJFourthRow = 0;
+
+    var posFourJPieceLength = 3;
+    var posFourJPieceRowTwoStart = 0;
+    var posFourJFirstRow = 1;
+    var posFourJSecondRow = 1;
+    var posFourJThirdRow = 2;
+    var posFourJFourthRow = 0;
+
+    var defaultLPieceLength = 2;
+    var defaultLPieceRowTwoStart = 3;
+    var defaultLFirstRow = 1;
+    var defaultLSecondRow = 3;
+    var defaultLThirdRow = 0;
+    var defaultLFourthRow = 0;
+
+    var posTwoLPieceLength = 3;
+    var posTwoLPieceRowTwoStart = 0;
+    var posTwoLFirstRow = 1;
+    var posTwoLSecondRow = 1;
+    var posTwoLThirdRow = 2;
+    var posTwoLFourthRow = 0;
+
+    var posThreeLPieceLength = 2;
+    var posThreeLPieceRowTwoStart = 0;
+    var posThreeLFirstRow = 3;
+    var posThreeLSecondRow = 1;
+    var posThreeLThirdRow = 0;
+    var posThreeLFourthRow = 0;
+
+    var posFourLPieceLength = 3;
+    var posFourLPieceRowTwoStart = 1;
+    var posFourLFirstRow = 2;
+    var posFourLSecondRow = 1;
+    var posFourLThirdRow = 1;
+    var posFourLFourthRow = 0;
+
+    var defaultSPieceLength = 2;
+    var defaultSPieceRowTwoStart = 3;
+    var defaultSFirstRow = 2;
+    var defaultSSecondRow = 2;
+    var defaultSThirdRow = 0;
+    var defaultSFourthRow = 0;
+
+    var posTwoSPieceLength = 3;
+    var posTwoSPieceRowTwoStart = 1;
+    var posTwoSFirstRow = 1;
+    var posTwoSSecondRow = 2;
+    var posTwoSThirdRow = 1;
+    var posTwoSFourthRow = 0;
+
+    var result;
+
+    var board = [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ];
+
+    function collisionDetection(x, y, s, r) {
+
+
+        var cx = x / 30;
+        var cy = y / 30;
+
+
+        switch (s) {
+
+            case 'I':
+
+
+                if (r === 1) {
+                    if (cx === 20) {
+                        return false;
+                    }
+                    return (board[cx][cy - 1] === 2 || board[cx][cy] === 2 || board[cx][cy + 1] === 2 || board[cx][cy + 2] === 2);
+                }
+                else if (r === 2) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx - 2][cy - 1] === 2 || board[cx - 1][cy - 1] === 2 || board[cx][cy - 1] === 2 || board[cx + 1][cy - 1] === 2);
+                }
+                else if (r === 3) {
+                    if (cx === 20) {
+                        return false;
+                    }
+                    return (board[cx][cy - 1] === 2 || board[cx][cy] === 2 || board[cx][cy + 1] === 2 || board[cx][cy + 2] === 2);
+                }
+
+                else if (r === 4) {
+                    if (cx === 18) {
+                        return false;
+                    }
+                    return (board[cx - 1][cy] === 2 || board[cx][cy] === 2 || board[cx + 1][cy] === 2 || board[cx + 2][cy] === 2);
+                }
+                break;
+
+            case 'J':
+                if (r === 1) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy] || board[cx + 1][cy + 1] || board[cx + 1][cy + 2]);
+                }
+                else if (r === 2) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy + 1] || board[cx - 1][cy + 2]);
+                }
+                else if (r === 3) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx][cy] || board[cx][cy + 1] || board[cx + 1][cy + 2]);
+                }
+                else if (r === 4) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy] || board[cx + 1][cy + 1]);
+                }
+                break;
+
+            case 'L':
+                if (r === 1) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy - 2] === 2 || board[cx + 1][cy - 1] === 2 || board[cx + 1][cy] === 2);
+                }
+                else if (r === 2) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy] === 2 || board[cx + 1][cy - 1] === 2 );
+                }
+                else if (r === 3) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy - 2] === 2 || board[cx][cy - 1] === 2 || board[cx][cy] === 2);
+                }
+
+                else if (r === 4) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy - 1] === 2 || board[cx - 1][cy - 2] === 2);
+                }
+
+                break;
+
+            case 'O':
+                if (r === 1) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy] || board[cx + 1][cy + 1]);
+                }
+                break;
+
+            case 'S':
+
+                if (r === 1) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy] || board[cx + 1][cy - 1] || board[cx][cy + 1]);
+                }
+
+                else if (r === 2) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx][cy] || board[cx][cy - 1] || board[cx + 1][cy]);
+                }
+
+                else if (r === 3) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy] || board[cx + 1][cy - 1] || board[cx][cy + 1]);
+                }
+
+                else if (r === 4) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx][cy] || board[cx][cy - 1] || board[cx + 1][cy]);
+                }
+
+                break;
+
+
+            case 'T':
+
+                if (r === 1) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy + 1] || board[cx + 1][cy] || board[cx + 1][cy - 1] );
+                }
+                else if (r === 2) {
+                    if (cx === 18) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy + 1] || board[cx + 1][cy] || board[cx + 2][cy] );
+                }
+                else if (r === 3) {
+                    if (cx === 18) {
+                        return false;
+                    }
+                    return (board[cx + 2][cy] || board[cx + 1][cy + 1] || board[cx + 1][cy - 1] );
+                }
+                else if (r === 4) {
+                    if (cx === 18) {
+                        return false;
+                    }
+                    return (board[cx + 1][cy - 1] || board[cx + 1][cy] || board[cx + 2][cy] );
+                }
+
+                break;
+
+
+            case 'Z':
+
+                if (r === 1) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx][cy] || board[cx + 1][cy + 1] || board[cx + 1][cy + 2]);
+                }
+                else if (r === 2) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return ( board[cx + 1][cy + 1] || board[cx][cy + 2]);
+                }
+
+                else if (r === 3) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return (board[cx][cy] || board[cx + 1][cy + 1] || board[cx + 1][cy + 2]);
+                }
+
+                else if (r === 4) {
+                    if (cx === 19) {
+                        return false;
+                    }
+                    return ( board[cx + 1][cy + 1] || board[cx][cy + 2]);
+                }
+
+
+                break;
+
+        }
+    }
+
+    function setSquareToFilled(x, y, s, r) {
+
+        var fbx = x / 30;
+        var fby = y / 30;
+
+        switch (s) {
+
+            case 'I':
+
+
+                if (r === 1) {
+                    board[fbx][fby - 1] = 1;
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx][fby + 2] = 1;
+                }
+                else if (r === 2) {
+                    board[fbx - 2][fby - 1] = 1;
+                    board[fbx - 1][fby - 1] = 1;
+                    board[fbx][fby - 1] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                }
+                else if (r === 3) {
+                    board[fbx][fby - 1] = 1;
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx][fby + 2] = 1;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby] = 1;
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby] = 1;
+                    board[fbx + 2][fby] = 1;
+                }
+
+                break;
+
+            case 'J':
+                if (r === 1) {
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                    board[fbx + 1][fby + 2] = 1;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby + 1] = 1;
+                    board[fbx - 1][fby + 2] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx][fby + 2] = 1;
+                    board[fbx + 1][fby + 2] = 1;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby + 1] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                break;
+
+            case 'L':
+                if (r === 1) {
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby - 2] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby - 1] = 1;
+                    board[fbx][fby - 1] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 1;
+                    board[fbx][fby - 1] = 1;
+                    board[fbx][fby - 2] = 1;
+                    board[fbx + 1][fby - 2] = 1;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby - 1] = 1;
+                    board[fbx][fby - 1] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx - 1][fby - 2] = 1;
+                }
+                break;
+
+
+            case 'O':
+                board[fbx][fby] = 1;
+                board[fbx][fby + 1] = 1;
+                board[fbx + 1][fby] = 1;
+                board[fbx + 1][fby + 1] = 1;
+                break;
+
+
+            case 'S':
+                if (r === 1) {
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby - 1] = 1;
+                    board[fbx][fby - 1] = 1;
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby - 1] = 1;
+                    board[fbx][fby - 1] = 1;
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+                break;
+
+
+            case 'T':
+                if (r === 1) {
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                }
+                else if (r === 2) {
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                    board[fbx + 2][fby] = 1;
+                }
+                else if (r === 3) {
+                    board[fbx + 2][fby] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 1][fby] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                }
+                else if (r === 4) {
+                    board[fbx][fby] = 1;
+                    board[fbx + 1][fby - 1] = 1;
+                    board[fbx + 2][fby] = 1;
+                    board[fbx + 1][fby] = 1;
+                }
+
+                break;
+
+            case 'Z':
+                if (r === 1) {
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                    board[fbx + 1][fby + 2] = 1;
+                }
+                if (r === 2) {
+                    board[fbx - 1][fby + 2] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx][fby + 2] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                }
+                if (r === 3) {
+                    board[fbx][fby] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                    board[fbx + 1][fby + 2] = 1;
+                }
+                if (r === 4) {
+                    board[fbx - 1][fby + 2] = 1;
+                    board[fbx][fby + 1] = 1;
+                    board[fbx][fby + 2] = 1;
+                    board[fbx + 1][fby + 1] = 1;
+                }
+
+                break;
+
+        }
+    }
+
+    function setSquareToEmpty(x, y, s, r) {
+
+        var fbx = x / 30;
+        var fby = y / 30;
+
+        switch (s) {
+
+            case 'I':
+
+
+                if (r === 1) {
+                    board[fbx][fby - 1] = 0;
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx][fby + 2] = 0;
+                }
+                else if (r === 2) {
+                    board[fbx - 2] [fby - 1] = 0;
+                    board[fbx - 1][fby - 1] = 0;
+                    board[fbx][fby - 1] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                }
+                else if (r === 3) {
+                    board[fbx][fby - 1] = 0;
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx][fby + 2] = 0;
+                }
+                else if (r === 4) {
+                    board[fbx - 1] [fby] = 0;
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby] = 0;
+                    board[fbx + 2][fby] = 0;
+                }
+                break;
+
+
+            case 'J':
+                if (r === 1) {
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                    board[fbx + 1][fby + 2] = 0;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby + 1] = 0;
+                    board[fbx - 1][fby + 2] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx][fby + 2] = 0;
+                    board[fbx + 1][fby + 2] = 0;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby + 1] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                break;
+
+            case 'L':
+                if (r === 1) {
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby - 2] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby - 1] = 0;
+                    board[fbx][fby - 1] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 0;
+                    board[fbx][fby - 1] = 0;
+                    board[fbx][fby - 2] = 0;
+                    board[fbx + 1][fby - 2] = 0;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby - 1] = 0;
+                    board[fbx][fby - 1] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx - 1][fby - 2] = 0;
+                }
+                break;
+
+            case 'O':
+                board[fbx][fby] = 0;
+                board[fbx][fby + 1] = 0;
+                board[fbx + 1][fby] = 0;
+                board[fbx + 1][fby + 1] = 0;
+                break;
+
+            case 'S':
+                if (r === 1) {
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby - 1] = 0;
+                    board[fbx][fby - 1] = 0;
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby - 1] = 0;
+                    board[fbx][fby - 1] = 0;
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                break;
+
+            case 'T':
+                if (r === 1) {
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                }
+                else if (r === 2) {
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                    board[fbx + 2][fby] = 0;
+                }
+                else if (r === 3) {
+                    board[fbx + 2][fby] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 1][fby] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                }
+                else if (r === 4) {
+                    board[fbx][fby] = 0;
+                    board[fbx + 1][fby - 1] = 0;
+                    board[fbx + 2][fby] = 0;
+                    board[fbx + 1][fby] = 0;
+                }
+                break;
+
+            case 'Z':
+                if (r === 1) {
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                    board[fbx + 1][fby + 2] = 0;
+                }
+                if (r === 2) {
+                    board[fbx - 1][fby + 2] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx][fby + 2] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                }
+                if (r === 3) {
+                    board[fbx][fby] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                    board[fbx + 1][fby + 2] = 0;
+                }
+                if (r === 4) {
+                    board[fbx - 1][fby + 2] = 0;
+                    board[fbx][fby + 1] = 0;
+                    board[fbx][fby + 2] = 0;
+                    board[fbx + 1][fby + 1] = 0;
+                }
+                break;
+
+        }
+    }
+
+    function squarePermanent(x, y, s, r) {
+
+
+        x -= 30;
+
+        var fbx = x / 30;
+        var fby = y / 30;
+
+        switch (s) {
+
+            case 'I':
+                if (r === 1) {
+                    board[fbx][fby - 1] = 2;
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx][fby + 2] = 2;
+                }
+                else if (r === 2) {
+                    board[fbx - 2][fby - 1] = 2;
+                    board[fbx - 1][fby - 1] = 2;
+                    board[fbx][fby - 1] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                }
+                else if (r === 3) {
+                    board[fbx][fby - 1] = 2;
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx][fby + 2] = 2;
+
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby] = 2;
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby] = 2;
+                    board[fbx + 2][fby] = 2;
+                }
+                break;
+
+            case 'J':
+                if (r === 1) {
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                    board[fbx + 1][fby + 2] = 2;
+                    // else rotate 2, 3, 4+
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby + 1] = 2;
+                    board[fbx - 1][fby + 2] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx][fby + 2] = 2;
+                    board[fbx + 1][fby + 2] = 2;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby + 1] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+
+                break;
+
+            case 'L':
+                if (r === 1) {
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby - 2] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby - 1] = 2;
+                    board[fbx][fby - 1] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 2;
+                    board[fbx][fby - 1] = 2;
+                    board[fbx][fby - 2] = 2;
+                    board[fbx + 1][fby - 2] = 2;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby - 1] = 2;
+                    board[fbx][fby - 1] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx - 1][fby - 2] = 2;
+                }
+                break;
+
+            case 'O':
+                board[fbx][fby] = 2;
+                board[fbx][fby + 1] = 2;
+                board[fbx + 1][fby] = 2;
+                board[fbx + 1][fby + 1] = 2;
+                break;
+
+            case 'S':
+                if (r === 1) {
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                else if (r === 2) {
+                    board[fbx - 1][fby - 1] = 2;
+                    board[fbx][fby - 1] = 2;
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                else if (r === 3) {
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                else if (r === 4) {
+                    board[fbx - 1][fby - 1] = 2;
+                    board[fbx][fby - 1] = 2;
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                break;
+
+            case 'T':
+                if (r === 1) {
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                }
+                else if (r === 2) {
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                    board[fbx + 2][fby] = 2;
+                }
+                else if (r === 3) {
+                    board[fbx + 2][fby] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 1][fby] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                }
+                else if (r === 4) {
+                    board[fbx][fby] = 2;
+                    board[fbx + 1][fby - 1] = 2;
+                    board[fbx + 2][fby] = 2;
+                    board[fbx + 1][fby] = 2;
+                }
+                break;
+
+            case 'Z':
+                if (r === 1) {
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                    board[fbx + 1][fby + 2] = 2;
+                }
+                if (r === 2) {
+                    board[fbx - 1][fby + 2] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx][fby + 2] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                }
+                if (r === 3) {
+                    board[fbx][fby] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                    board[fbx + 1][fby + 2] = 2;
+                }
+                if (r === 4) {
+                    board[fbx - 1][fby + 2] = 2;
+                    board[fbx][fby + 1] = 2;
+                    board[fbx][fby + 2] = 2;
+                    board[fbx + 1][fby + 1] = 2;
+                }
+                break;
+
+        }
+    }
+
+    function clearSpace() {
+        var a, b;
+
+        for (a = 0; a < 20; a++) {
+            for (b = 0; b < 12; b++) {
+                if (board[a][b] === 0) {
+                    ctx.clearRect(b * 30, a * 30, 30, 30);
+                }
+            }
+        }
+    }
+
+    function isThereACompleteRow() {
+
+        var is_row_complete = false;
+        var num_and_position_complete_rows = {};
+        var a, b = 0;
+        var i = 0;
+        var numberPermanentPieces = 0;
+
+        for (a = 0; a < 20; a++) {
+            numberPermanentPieces = 0;
+            for (b = 0; b < 12; b++) {
+                if (board[a][b] === 2) {
+                    numberPermanentPieces++;
+                    if (numberPermanentPieces === 12) {
+                        i++;
+                        is_row_complete = true;
+                        num_and_position_complete_rows[i] = a;
+                    }
+                }
+            }
+        }
+
+        if (is_row_complete) {
+
+            return num_and_position_complete_rows;
+        }
+        else {
+            return is_row_complete;
+        }
+    }
+
+    function moveNotFeasible(x, y, s, r) {
+        return (collisionDetection(x, y, s, r) || pieceHitBottom(x, y, s, r));
+    }
+
+    function pieceHitBottom(x, y, s, r) {
+
+        var hitBottom = false;
+
+        switch (s) {
+
+            case 'I':
+                if (r === 1 && x === canvas.height) {
+
+                    hitBottom = true;
+                }
+                else if (r === 2 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 3 && x === canvas.height) {
+
+                    hitBottom = true;
+                }
+                else if (r === 4 && x === canvas.height - 60) {
+
+                    hitBottom = true;
+                }
+                break;
+
+            case 'J':
+
+                if (r === 1 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                else if (r === 2 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                else if (r === 3 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 4 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                break;
+
+
+            case 'L':
+                if (r === 1 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 2 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 3 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 4 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                break;
+
+            case 'O':
+                if (r === 1 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                break;
+
+            case 'S':
+                if (r === 1 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 2 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 3 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 4 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                break;
+
+            case 'T':
+                if (r === 1 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                else if (r === 2 && x === canvas.height - 60) {
+
+                    hitBottom = true;
+
+                }
+                else if (r === 3 && x === canvas.height - 60) {
+
+                    hitBottom = true;
+                }
+                else if (r === 4 && x === canvas.height - 60) {
+
+                    hitBottom = true;
+                }
+                break;
+
+            case 'Z':
+                if (r === 1 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                else if (r === 2 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                else if (r === 3 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+                }
+                else if (r === 4 && x === canvas.height - 30) {
+
+                    hitBottom = true;
+
+                }
+                break;
+
+        }
+
+        return (hitBottom && !collisionDetection(x, y, s, r));
+    }
+
+    function setInitialPositionForShape(s) {
+
+        switch (s) {
+            case 'I' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+            case 'O' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+            case 'Z' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+            case 'S' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+            case 'L' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+            case 'J' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+            case 'T' :
+                x = 0;
+                y = 150;
+                pieceColour = "#333333";
+                break;
+        }
+    }
+
+    function makeANewMove() {
+
+        firstMove = true;
+        speed = 1000;
+        clearInterval(interval);
+
+        interval = setInterval(function () {
+            if (!isPaused) {
+                draw();
+            }
+        }, speed);
+
+        if (a.length === 0) {
+            nextShapes(a);
+        }
+
+        s = shapes[a.pop()];
+
+        r = 1;
+
+        setInitialPositionForShape(s);
+
+        setSquareToFilled(x, y, s, r);
+
+        clearSpace();
+
+        setSquareToEmpty(x, y, s, r);
+
+        whatDip(s, firstMove, initialRotation);
+
+        x += 30;
+    }
+
+    function isShapeCurrentlyToLeft() {
+
+        if (x === canvas.height - 30) {
+            x -= 30;
+        }
+
+        var yl = y + 30;
+        var xl = x;
+        yl /= 30;
+        xl /= 30;
+
+
+        switch (s) {
+
+            case 'I':
+                if (r === 1) {
+                    return (board[xl][yl + 2]);
+                }
+                if (r === 2) {
+                    return (board[xl - 2][yl - 1] || board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl + 1][yl - 1]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl + 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 2][yl] || board[xl - 1][yl] || board[xl][yl] || board[xl + 1][yl]);
+                }
+                break;
+
+            case 'J':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl + 1][yl] || board[xl + 1][yl + 1] || board[xl + 1][yl + 2]);
+                }
+                if (r === 2) {
+                    return (board[xl - 1][yl + 1] || board[xl - 1][yl + 2] || board[xl][yl + 1] || board[xl + 1][yl + 1]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl][yl + 2] || board[xl + 1][yl + 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl + 1] || board[xl][yl + 1] || board[xl + 1][yl + 1] || board[xl + 1][yl]);
+                }
+
+                break;
+
+            case 'L':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl + 1][yl] || board[xl + 1][yl - 2] || board[xl + 1][yl - 1]);
+                }
+                if (r === 2) {
+                    return (board[xl + 1][yl - 1] || board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl - 1] || board[xl][yl - 2] || board[xl + 1][yl - 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl + 1][yl - 1] || board[xl - 1][yl - 2]);
+                }
+
+                break;
+
+            case 'O':
+                return (board[xl][yl + 1] || board[xl + 1][yl + 1]);
+                break;
+
+            case 'S':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 2) {
+                    return (board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl][yl] || board[xl + 1][yl]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl][yl] || board[xl + 1][yl]);
+                }
+
+                break;
+
+            case 'T':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl + 1][yl - 1] || board[xl + 1][yl] || board[xl + 1][yl + 1]);
+                }
+                if (r === 2) {
+                    return (board[xl][yl] || board[xl + 1][yl + 1] || board[xl + 1][yl] || board[xl + 2][yl]);
+                }
+                if (r === 3) {
+                    return (board[xl + 2][yl] || board[xl + 1][yl + 1] || board[xl + 1][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 4) {
+                    return (board[xl][yl] || board[xl + 1][yl - 1] || board[xl + 2][yl] || board[xl + 1][yl]);
+                }
+
+
+                break;
+
+            case 'Z':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl + 1] || board[xl + 1][yl + 2]);
+                }
+                if (r === 2) {
+                    return (board[xl - 1][yl + 2] || board[xl][yl + 1] || board[xl][yl + 2] || board[xl + 1][yl + 1]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl + 1] || board[xl + 1][yl + 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl + 2] || board[xl][yl + 1] || board[xl][yl + 2] || board[xl + 1][yl + 1]);
+                }
+                break;
+
+        }
+
+        return;
+    }
+
+    function isShapeCurrentlyToRight() {
+
+        if (x === canvas.height - 30) {
+            x -= 30;
+        }
+
+        var yl = y - 30;
+        var xl = x;
+        yl /= 30;
+        xl /= 30;
+
+
+        switch (s) {
+
+            case 'I':
+                if (r === 1) {
+                    return (board[xl][yl - 1]);
+                }
+                if (r === 2) {
+                    return (board[xl - 2][yl - 1] || board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl + 1][yl - 1]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl - 1]);
+                }
+                if (r === 4) {
+                    return (board[xl - 2][yl] || board[xl - 1][yl] || board[xl][yl] || board[xl + 1][yl]);
+                }
+                break;
+
+            case 'J':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl + 1][yl] || board[xl + 1][yl + 1] || board[xl + 1][yl + 2]);
+                }
+                if (r === 2) {
+                    return (board[xl - 1][yl + 1] || board[xl - 1][yl + 2] || board[xl][yl + 1] || board[xl + 1][yl + 1]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl][yl + 2] || board[xl + 1][yl + 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl + 1] || board[xl][yl + 1] || board[xl + 1][yl + 1] || board[xl + 1][yl]);
+                }
+                break;
+
+            case 'L':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl + 1][yl] || board[xl + 1][yl - 2] || board[xl + 1][yl - 1]);
+                }
+                if (r === 2) {
+                    return (board[xl + 1][yl - 1] || board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl - 1] || board[xl][yl - 2] || board[xl + 1][yl - 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl + 1][yl - 1] || board[xl - 1][yl - 2]);
+                }
+                break;
+
+            case 'O':
+                return (board[xl][yl] || board[xl + 1][yl]);
+                break;
+
+            case 'S':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 2) {
+                    return (board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl][yl] || board[xl + 1][yl]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl - 1] || board[xl][yl - 1] || board[xl][yl] || board[xl + 1][yl]);
+                }
+
+                break;
+
+            case 'T':
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl + 1][yl - 1] || board[xl + 1][yl] || board[xl + 1][yl + 1]);
+                }
+                if (r === 2) {
+                    return (board[xl][yl] || board[xl + 1][yl + 1] || board[xl + 1][yl] || board[xl + 2][yl]);
+                }
+                if (r === 3) {
+                    return (board[xl + 2][yl] || board[xl + 1][yl + 1] || board[xl + 1][yl - 1] || board[xl + 1][yl]);
+                }
+                if (r === 4) {
+                    return (board[xl][yl] || board[xl + 1][yl - 1] || board[xl + 2][yl] || board[xl + 1][yl]);
+                }
+
+                break;
+
+            case 'Z':
+
+                if (r === 1) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl + 1] || board[xl + 1][yl + 2]);
+                }
+                if (r === 2) {
+                    return (board[xl - 1][yl + 2] || board[xl][yl + 1] || board[xl][yl + 2] || board[xl + 1][yl + 1]);
+                }
+                if (r === 3) {
+                    return (board[xl][yl] || board[xl][yl + 1] || board[xl + 1][yl + 1] || board[xl + 1][yl + 2]);
+                }
+                if (r === 4) {
+                    return (board[xl - 1][yl + 2] || board[xl][yl + 1] || board[xl][yl + 2] || board[xl + 1][yl + 1]);
+                }
+
+                break;
+
+        }
+
+        return;
+    }
+
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min)) + min;
+    }
+
+    function nextShapes(a) {
+
+        var numInArray = false;
+        var num;
+
+        for (var i = 0; i < 7; i++) {
+            do {
+                numInArray = false;
+                num = getRandomInt(1, 8);
+
+                for (var x in a) {
+                    if (a[x] == num) {
+                        numInArray = true;
+                    }
+                }
+            } while (numInArray);
+
+            a.push(num);
+        }
+        return a;
+    }
+
+    function whatDip(s, firstMove, initialRotation) {
+
+
+        switch (s) {
+
+            case 'I':
+
+                if (r === 1) {
+                    y -= 30;
+                    initialRotation = false;
+                    createSquare(y, x, defaultIPieceLength, defaultIPieceRowTwoStart, forwardThree, backwardThree,
+                            defaultIFirstRow, defaultISecondRow, defaultIThirdRow, defaultIFourthRow, pieceColour);
+                    y += 30;
+                }
+                else if (r === 2) {
+                    y -= 30;
+                    x -= 60;
+                    initialRotation = false;
+                    createSquare(y, x, posTwoIPieceLength, posTwoIPieceRowTwoStart, forwardThree, backwardThree, posTwoIFirstRow, posTwoISecondRow, posTwoIThirdRow, posTwoIFourthRow, pieceColour);
+                    x += 60;
+                    y += 30;
+                }
+                else if (r === 3) {
+                    y += 30;
+                    x -= 60;
+                    createSquare(y, x, posThreeIPieceLength, posThreeIPieceRowTwoStart, forwardThree, backwardThree, posThreeIFirstRow, posThreeISecondRow, posThreeIThirdRow, posThreeIFourthRow, pieceColour);
+                    initialRotation = false;
+                    y -= 30;
+                    x += 60;
+                }
+                else if (r === 4) {
+                    x -= 30;
+                    initialRotation = false;
+                    createSquare(y, x, posFourIPieceLength, posFourIPieceRowTwoStart, forwardThree, backwardThree, posFourIFirstRow, posFourISecondRow, posFourIThirdRow, posFourIFourthRow, pieceColour);
+                    x += 30;
+                }
+
+                break;
+
+            case 'J':
+
+                if (r === 1) {
+                    // y-=30;
+                    initialRotation = false;
+                    createSquare(y, x, defaultJPieceLength, defaultJPieceRowTwoStart, forwardThree, backwardThree, defaultJFirstRow, defaultJSecondRow, defaultJThirdRow, defaultJFourthRow, pieceColour);
+                    // y+=30;
+                }
+                else if (r === 2) {
+                    y += 30;
+                    x -= 30;
+                    initialRotation = false;
+                    createSquare(y, x, posTwoJPieceLength, posTwoJPieceRowTwoStart, forwardThree, backwardThree, posTwoJFirstRow, posTwoJSecondRow, posTwoJThirdRow, posTwoJFourthRow, pieceColour);
+                    x += 30;
+                    y -= 30;
+                }
+                else if (r === 3) {
+                    // y-=30; x-=60;
+                    createSquare(y, x, posThreeJPieceLength, posThreeJPieceRowTwoStart, forwardThree, backwardThree, posThreeJFirstRow, posThreeJSecondRow, posThreeJThirdRow, posThreeJFourthRow, pieceColour);
+                    initialRotation = false;
+                    // y+=30; x+=60;
+                }
+                else if (r === 4) {
+                    forwardThree = false;
+                    backwardThree = true;
+                    initialRotation = false;
+                    y += 30;
+                    x -= 30;
+                    createSquare(y, x, posFourJPieceLength, posFourJPieceRowTwoStart, forwardThree, backwardThree, posFourJFirstRow, posFourJSecondRow, posFourJThirdRow, posFourJFourthRow, pieceColour);
+                    y -= 30;
+                    x += 30;
+                    forwardThree = false;
+                    backwardThree = false;
+                }
+
+                break;
+
+            case 'L':
+
+                if (firstMove) {
+                    y += 30;
+                }
+
+                if (r === 1) {
+
+                    createSquare(y, x, defaultLPieceLength, defaultLPieceRowTwoStart, forwardThree, backwardThree, defaultLFirstRow, defaultLSecondRow, defaultLThirdRow, defaultLFourthRow, pieceColour);
+
+                }
+                else if (r === 2) {
+                    initialRotation = false;
+                    y -= 30;
+                    x -= 30;
+                    createSquare(y, x, posTwoLPieceLength, posTwoLPieceRowTwoStart, forwardThree, backwardThree, posTwoLFirstRow, posTwoLSecondRow, posTwoLThirdRow, posTwoLFourthRow, pieceColour);
+                    y += 30;
+                    x += 30;
+                }
+                else if (r === 3) {
+                    y -= 60;
+                    createSquare(y, x, posThreeLPieceLength, posThreeLPieceRowTwoStart, forwardThree, backwardThree, posThreeLFirstRow, posThreeLSecondRow, posThreeLThirdRow, posThreeLFourthRow, pieceColour);
+                    initialRotation = false;
+                    y += 60;
+                }
+                else if (r === 4) {
+                    y -= 60;
+                    x -= 30;
+                    createSquare(y, x, posFourLPieceLength, posFourLPieceRowTwoStart, forwardThree, backwardThree, posFourLFirstRow, posFourLSecondRow, posFourLThirdRow, posFourLFourthRow, pieceColour);
+                    y += 60;
+                    x += 30;
+
+                }
+
+                break;
+
+            case 'O':
+                createSquare(y, x, defaultOPieceLength, defaultOPieceRowTwoStart, forwardThree, backwardThree, defaultOFirstRow, defaultOSecondRow, defaultOThirdRow, defaultOFourthRow, pieceColour);
+                break;
+
+            case 'S':
+
+                if (firstMove) {
+                    y += 30;
+                }
+
+                if (r === 1) {
+
+                    createSquare(y, x, defaultSPieceLength, defaultSPieceRowTwoStart, forwardThree, backwardThree, defaultSFirstRow, defaultSSecondRow, defaultSThirdRow, defaultSFourthRow, pieceColour);
+
+                }
+                else if (r === 2) {
+                    initialRotation = false;
+                    y -= 30;
+                    x -= 30;
+                    createSquare(y, x, posTwoSPieceLength, posTwoSPieceRowTwoStart, forwardThree, backwardThree, posTwoSFirstRow, posTwoSSecondRow, posTwoSThirdRow, posTwoSFourthRow, pieceColour);
+                    y += 30;
+                    x += 30;
+                }
+                else if (r === 3) {
+                    createSquare(y, x, defaultSPieceLength, defaultSPieceRowTwoStart, forwardThree, backwardThree, defaultSFirstRow, defaultSSecondRow, defaultSThirdRow, defaultSFourthRow, pieceColour);
+                }
+                else if (r === 4) {
+                    y -= 30;
+                    x -= 30;
+                    createSquare(y, x, posTwoSPieceLength, posTwoSPieceRowTwoStart, forwardThree, backwardThree, posTwoSFirstRow, posTwoSSecondRow, posTwoSThirdRow, posTwoSFourthRow, pieceColour);
+                    y += 30;
+                    x += 30;
+
+                }
+
+                break;
+
+            case 'T':
+                if (r === 1) {
+
+                    createSquare(y, x, defaultTPieceLength, defaultTPieceRowTwoStart, forwardThree, backwardThree, defaultTFirstRow, defaultTSecondRow, defaultTThirdRow, defaultTFourthRow, pieceColour);
+                }
+                else if (r === 2) {
+                    initialRotation = false;
+
+                    createSquare(y, x, posTwoTPieceLength, posTwoTPieceRowTwoStart, forwardThree, backwardThree, posTwoTFirstRow, posTwoTSecondRow, posTwoTThirdRow, posTwoTFourthRow, pieceColour);
+
+
+                }
+                else if (r === 3) {
+                    forwardThree = true;
+                    y += 60;
+                    createSquare(y, x, posThreeTPieceLength, posThreeTPieceRowTwoStart, forwardThree, backwardThree, posThreeTFirstRow, posThreeTSecondRow, posThreeTThirdRow, posThreeTFourthRow, pieceColour);
+                    y -= 60;
+                    forwardThree = false;
+                }
+                else if (r === 4) {
+                    forwardThree = true;
+                    createSquare(y, x, posFourthTPieceLength, posFourthTPieceRowTwoStart, forwardThree, backwardThree, posFourthTFirstRow, posFourthTSecondRow, posFourthTThirdRow, posFourthTFourthRow, pieceColour);
+                    forwardThree = false;
+
+                }
+                break;
+
+            case 'Z':
+
+
+                if (r === 1) {
+
+                    createSquare(y, x, defaultZPieceLength, defaultZPieceRowTwoStart, forwardThree, backwardThree, defaultZFirstRow, defaultZSecondRow, defaultZThirdRow, defaultZFourthRow, pieceColour)
+                }
+                else if (r === 2) {
+                    initialRotation = false;
+                    x -= 30;
+                    y += 60;
+                    createSquare(y, x, posTwoZPieceLength, posTwoZPieceRowTwoStart, forwardThree, backwardThree, posTwoZFirstRow, posTwoZSecondRow, posTwoZThirdRow, posTwoZFourthRow, pieceColour);
+                    x += 30;
+                    y -= 60;
+                }
+                else if (r === 3) {
+                    createSquare(y, x, defaultZPieceLength, defaultZPieceRowTwoStart, forwardThree, backwardThree, defaultZFirstRow, defaultZSecondRow, defaultZThirdRow, defaultZFourthRow, pieceColour);
+                }
+                else if (r === 4) {
+                    x -= 30;
+                    y += 60;
+                    createSquare(y, x, posTwoZPieceLength, posTwoZPieceRowTwoStart, forwardThree, backwardThree, posTwoZFirstRow, posTwoZSecondRow, posTwoZThirdRow, posTwoZFourthRow, pieceColour);
+                    x += 30;
+                    y -= 60;
+                }
+
+                break;
+        }
+        return initialRotation;
+    }
+
+    function createSquare(x, y, pieceLength, pieceRowTwoStart, forwardThree, backwardThree, firstRow, secondRow, thirdRow, fourthRow, pieceColour) {
+
+        var pieceWidth = 0;
+        var defaultx = x;
+
+
+        for (var i = 0; i < pieceLength; i++) {
+
+            if (i === 0) {
+                pieceWidth = firstRow;
+            } else if (i === 1) {
+                pieceWidth = secondRow;
+            } else if (i === 2) {
+                pieceWidth = thirdRow;
+                if (forwardThree) {
+                    x += 30;
+                }
+                if (backwardThree) {
+                    x -= 30;
+                }
+
+            } else {
+                pieceWidth = fourthRow;
+            }
+
+
+            for (var j = 0; j < pieceWidth; j++) {
+                ctx.beginPath();
+                ctx.rect(x + 1, y + 1, 29, 29);
+                ctx.fillStyle = pieceColour;
+                ctx.fill();
+                ctx.closePath();
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffffff";
+                ctx.strokeRect(x, y, squareOutlineWidth, squareOutlineHeight);
+                ctx.closePath();
+                x += 30;
+            }
+
+            if (pieceRowTwoStart === 0) {
+                x = defaultx;
+            }
+            else {
+                x -= (pieceRowTwoStart * 30);
+            }
+
+            y += 30;
+        }
+
+    }
+
+    function makeAnotherMove() {
+
+        firstMove = false;
+
+        setSquareToFilled(x, y, s, r);
+
+        clearSpace();
+
+        setSquareToEmpty(x, y, s, r);
+
+        var l = whatDip(s, firstMove, initialRotation);
+
+        initialRotation = l;
+
+        x += 30;
+    }
+
+    function clearTheCompleteRows(fullRow) {
+
+        for (var r in fullRow) {
+            var row = fullRow[r];
+            var column = 0;
+            row *= 30;
+
+            while (column < 12) {
+                ctx.clearRect(column * 30, row, 30, 30);
+                setSquareToEmpty(row, column * 30);
+                column++;
+            }
+        }
+    }
+
+    function moveAboveRowsDown(fullRow) {
+
+        var i = 0;
+        var a, b;
+
+
+        for (a = 19; a > 0; a--) {
+
+
+            if (a === i) {
+
+                for (b = 0; b < 12; b++) {
+                    board[a][b] = 0;
+                }
+            }
+            else {
+                if (checkObjectIfRowComplete(fullRow, a)) {
+                    // increment the row number
+                    // if current row complete we atleast gonna look
+                    // one more up
+                    i++;
+                }
+                else {
+
+                    // this row isnt complete so loop over
+                    // making it equal to row above to compesnsate
+                    // for removing an earlier one
+                    // if one has been removed - hence if(i)
+                    if (i) {
+                        for (b = 0; b < 12; b++) {
+                            board[a + i][b] = board[a][b];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function checkObjectIfRowComplete(fullRow, a) {
+        var isRowComplete = false;
+        for (var i in fullRow) {
+            if (fullRow[i] === a)
+                isRowComplete = true;
+        }
+        return isRowComplete;
+    }
+
+    function isPossibleToRotate(x, y, s, r) {
+
+        var cx = x / 30;
+        var cy = y / 30;
+        var rotate = false;
+
+        var shift = r;
+        shift++;
+        (shift === 5) ? shift = 1 : null;
+
+
+        switch (s) {
+
+            case 'I':
+
+                if (shift === 1) {
+                    rotate = (board[cx][cy] === 2 || board[cx][cy + 1] === 2 || board[cx][cy + 2] === 2 || board[cx][cy + 3] === 2);
+                }
+                else if (shift === 2) {
+                    rotate = (board[cx][cy + 2] === 2 || board[cx + 1][cy + 2] === 2 || board[cx + 2][cy + 2] === 2 || board[cx + 3][cy + 2] === 2);
+                }
+                else if (shift === 3) {
+                    rotate = (board[cx + 2][cy - 1] === 2 || board[cx + 2][cy] === 2 || board[cx + 2][cy + 1] === 2 || board[cx + 2][cy + 2] === 2);
+                }
+                else if (shift === 4) {
+                    rotate = (board[cx][cy + 1] === 2 || board[cx + 1][cy + 1] === 2 || board[cx + 2][cy + 1] === 2 || board[cx + 3][cy + 1] === 2);
+                }
+
+                break;
+
+            case 'J':
+                return (board[cx + 1][cy] || board[cx + 1][cy + 1] || board[cx + 1][cy + 2]);
+                break;
+
+            case 'L':
+                return (board[cx + 1][cy - 2] === 2 || board[cx + 1][cy - 1] === 2 || board[cx + 1][cy] === 2);
+                break;
+
+            case 'O':
+                return (board[cx + 1][cy] || board[cx + 1][cy + 1]);
+                break;
+
+            case 'S':
+                return (board[cx + 1][cy] || board[cx + 1][cy - 1] || board[cx][cy + 1]);
+                break;
+
+            case 'T':
+                return (board[cx + 1][cy + 1] || board[cx + 1][cy] || board[cx + 1][cy - 1] );
+                break;
+
+            case 'Z':
+                return (board[cx][cy] || board[cx + 1][cy + 1] || board[cx + 1][cy + 2]);
+                break;
+
+        }
+
+        return !rotate;
+    }
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+
+    function unlockRight() {
+        lockedRight = false;
+    }
+
+    function unlockLeft() {
+        lockedLeft = false;
+    }
+
+    function unlockDown() {
+        lockedDown = false;
+    }
+
+    function unlockRotate() {
+        lockedRotate = false;
+    }
+
+    function keyDownHandler(e) {
+        if (e.keyCode == 39) {
+            rightPressed = true;
+            if (isPieceNextToRightEdge() && !isShapeCurrentlyToLeft()) {
+
+
+                if (!lockedRight) {
+                    lockedRight = true;
+                    setTimeout(unlockRight, 500);
+                    y += 30
+                }
+
+            }
+        } else if (e.keyCode == 37) {
+            leftPressed = true;
+            if (isPieceNextToLeftEdge() && !isShapeCurrentlyToRight()) {
+
+
+                if (!lockedLeft) {
+                    lockedLeft = true;
+                    setTimeout(unlockLeft, 500);
+                    y -= 30;
+                }
+            }
+        } else if (e.keyCode == 32) {
+            spacePressed = true;
+
+            if (1) {
+                if (!lockedRotate) {
+                    lockedRotate = true;
+                    setTimeout(unlockRotate, 1000);
+
+                    setSquareToEmpty(x, y, s, r);
+
+                    if (s === 'O') {
+                        return;
+                    }
+
+
+                    if (r === 4 && s === 'I') {
+                        r = 1;
+                        x -= 30;
+                        if (y <= 0) {
+                            var diff = y - 0;
+                            y += Math.abs(diff) + 30;
+                        }
+                        if (y >= 300) {
+                            var diff = y - 300;
+                            y -= diff + 30;
+                        }
+
+                        initialRotation = true;
+                    }
+                    else if (r === 4 && s === 'J') {
+                        r = 1;
+                        x -= 30;
+                        initialRotation = true;
+                        if (y >= 300) {
+                            var diff = y - 300;
+                            y -= diff + 30;
+                        }
+                    }
+                    else if (r === 4 && s === 'L') {
+                        r = 1;
+                        x -= 30;
+                        initialRotation = true;
+                        if (y >= 360) {
+                            var diff = y - 300;
+                            y -= diff - 30;
+                        }
+                    }
+                    else if (r === 4 && s === 'S') {
+                        r = 1;
+                        x -= 30;
+                        initialRotation = true;
+
+                        if (y >= 330) {
+                            var diff = y - 300;
+                            y -= diff;
+                        }
+                    }
+                    else if (r === 4 && s === 'T') {
+                        r = 1;
+                        x -= 30;
+                        initialRotation = true;
+                        if (y >= 330) {
+                            var diff = y - 300;
+                            y -= diff;
+                        }
+                    }
+                    else if (r === 4 && s === 'Z') {
+                        r = 1;
+                        x -= 30;
+                        y += 30;
+                        if (y >= 270) {
+                            var diff = y - 300;
+                            y -= diff + 30;
+                        }
+                        initialRotation = true;
+                    }
+                    else {
+                        r++;
+                        initialRotation = true;
+                    }
+
+
+
+                    if (r === 2 && s === 'I') {
+                        y += 60;
+                        if (x <= 30) {
+                            x += 30;
+                        }
+                    }
+                    if (r === 3 && s === 'I') {
+                        x -= 30;
+                        y -= 60;
+                        if (y < 0) {
+                            var diff = y - 0;
+                            y += Math.abs(diff) + 30;
+                        }
+                        if (y >= 300) {
+                            var diff = y - 300;
+                            y -= diff + 30;
+                        }
+
+
+                    }
+                    if (r === 4 && s === 'I') {
+                        x -= 60;
+                    }
+
+                    if (r === 2 && s === 'J') {
+                        x -= 30;
+                        if (x <= 0) {
+                            x += 30;
+                        }
+                    }
+                    if (r === 3 && s === 'J') {
+                        x -= 30;
+                        if (x <= 0 || x === 30) {
+                            x += 30;
+                        }
+                        if (y < 0) {
+                            var diff = y - 0;
+                            y += Math.abs(diff);
+                        }
+                    }
+                    if (r === 4 && s === 'J') {
+                        x -= 30;
+
+                    }
+
+                    if (r === 2 && s === 'L') {
+                        x -= 30;
+
+                        if (x <= 0) {
+                            x += 30;
+                        }
+                    }
+                    if (r === 3 && s === 'L') {
+                        x -= 30;
+
+                        if (y <= 30) {
+                            var diff = y - 0;
+                            y += Math.abs(diff);
+                        }
+                        if (y >= 360) {
+                            var diff = y - 300;
+                            y -= diff - 30;
+                        }
+                    }
+                    if (r === 4 && s === 'L') {
+                        x -= 30;
+                    }
+
+                    if (r === 2 && s === 'S') {
+                        x -= 30;
+                        y += 30;
+                        if (x <= 0) {
+                            x += 30;
+                        }
+                    }
+                    if (r === 3 && s === 'S') {
+                        x -= 30;
+                        y -= 30;
+
+                        if (y <= 0) {
+                            var diff = y - 0;
+                            y += Math.abs(diff) + 30;
+                        }
+                    }
+                    if (r === 4 && s === 'S') {
+                        x -= 30;
+                    }
+
+
+                    if (r === 2 && s === 'T') {
+                        x -= 30;
+                    }
+                    if (r === 3 && s === 'T') {
+                        x -= 30;
+                        if (y <= 0) {
+                            var diff = y - 0;
+                            y += Math.abs(diff) + 30;
+                        }
+                    }
+                    if (r === 4 && s === 'T') {
+                        x -= 30;
+                    }
+
+                    if (r === 2 && s === 'Z') {
+                        x -= 30;
+                        if (x <= 0) {
+                            x += 30;
+                        }
+                    }
+                    if (r === 3 && s === 'Z') {
+                        x -= 30;
+                        if (x <= 0) {
+                            x += 30;
+                        }
+                        if (y <= 0) {
+                            var diff = y - 0;
+                            y += Math.abs(diff);
+                        }
+                    }
+                    if (r === 4 && s === 'Z') {
+                        x -= 30;
+                        y -= 30;
+
+                    }
+                }
+            }
+        }
+        else if (e.keyCode == 40) {
+            if (!collisionDetection(x, y, s, r)) {
+                downPressed = false;
+
+                if (!lockedDown) {
+                    lockedDown = true;
+                    setTimeout(unlockDown, 500);
+                    setSpeed();
+
+                }
+            }
+        }
+    }
+
+    function setSpeed() {
+
+        speed = 50;
+        clearInterval(interval);
+        interval = setInterval(draw, speed);
+    };
+
+    function isPieceNextToRightEdge() {
+
+        var nextToEdge = false;
+
+        switch (s) {
+
+            case 'I':
+                if (r === 1) {
+                    nextToEdge = (y + 60) !== canvas.width - 30;
+                }
+                if (r === 2) {
+                    nextToEdge = (y - 30) !== canvas.width - 30;
+                }
+                if (r === 3) {
+                    nextToEdge = (y + 60) !== canvas.width - 30;
+                }
+                if (r === 4) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                break;
+            case 'O':
+                nextToEdge = (y + 30) !== canvas.width - 30;
+                break;
+            case 'Z':
+                nextToEdge = (y + 60) !== canvas.width - 30;
+                break;
+            case 'T':
+
+
+                if (r === 1) {
+                    nextToEdge = (y + 30) !== canvas.width - 30;
+                }
+                if (r === 2) {
+                    nextToEdge = (y + 30) !== canvas.width - 30;
+                }
+                if (r === 3) {
+                    nextToEdge = (y + 30) !== canvas.width - 30;
+                }
+                if (r === 4) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                break;
+            case 'J':
+                if (r === 1) {
+                    nextToEdge = (y + 60) !== canvas.width - 30;
+                }
+                if (r === 2) {
+                    nextToEdge = (y + 60) !== canvas.width - 30;
+                }
+                if (r === 3) {
+                    nextToEdge = (y + 60) !== canvas.width - 30;
+                }
+                if (r === 4) {
+                    nextToEdge = (y + 30) !== canvas.width - 30;
+                }
+                break;
+            case 'L':
+                if (r === 1) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                if (r === 2) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                if (r === 3) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                if (r === 4) {
+                    nextToEdge = y !== canvas.width;
+                }
+                break;
+            case 'S':
+
+                if (r === 1) {
+                    nextToEdge = y !== canvas.width - 60;
+                }
+                if (r === 2) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                if (r === 3) {
+                    nextToEdge = y !== canvas.width - 60;
+                }
+                if (r === 4) {
+                    nextToEdge = y !== canvas.width - 30;
+                }
+                break;
+            default :
+                nextToEdge = y !== canvas.width - 30;
+                break;
+
+        }
+
+        return nextToEdge;
+    }
+
+    function isPieceNextToLeftEdge() {
+
+        var nextToEdge = false;
+
+        switch (s) {
+
+
+            case 'I':
+                if (r === 1) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                if (r === 2) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                if (r === 3) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                if (r === 4) {
+                    nextToEdge = y !== 0;
+                }
+                break;
+            case 'L':
+                if (r === 1) {
+                    nextToEdge = (y - 60) !== 0;
+                }
+                if (r === 2) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                if (r === 3) {
+                    nextToEdge = (y - 60) !== 0;
+                }
+                if (r === 4) {
+                    nextToEdge = (y - 60) !== 0;
+                }
+                break;
+            case 'J':
+
+                if (r === 1) {
+                    nextToEdge = y !== 0;
+                }
+                if (r === 2) {
+                    nextToEdge = (y + 30) !== 0;
+                }
+                if (r === 3) {
+                    nextToEdge = y !== 0;
+                }
+                if (r === 4) {
+                    nextToEdge = y !== 0;
+                }
+                break;
+            case 'T':
+
+                if (r === 1) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                if (r === 2) {
+                    nextToEdge = y !== 0;
+                }
+                if (r === 3) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                if (r === 4) {
+                    nextToEdge = (y - 30) !== 0;
+                }
+                break;
+            case 'S':
+                nextToEdge = (y - 30) !== 0;
+                break;
+            case 'Z':
+
+                if (r === 1) {
+                    nextToEdge = y !== 0;
+                }
+                if (r === 2) {
+                    nextToEdge = (y + 30) !== 0;
+                }
+                if (r === 3) {
+                    nextToEdge = y !== 0;
+                }
+                if (r === 4) {
+                    nextToEdge = (y + 30) !== 0;
+                }
+                break;
+
+            default :
+                nextToEdge = y !== 0;
+                break;
+
+        }
+
+        return nextToEdge;
+    }
+
+    function printOutBoardCorrectly() {
+
+        var stringOfBoard = "";
+        var a, b;
+
+        for (a = 0; a < 20; a++) {
+            for (b = 0; b < 12; b++) {
+
+                stringOfBoard += board[a][b].toString();
+                stringOfBoard += ", ";
+            }
+
+            stringOfBoard += "\ </br> ";
+        }
+
+        return stringOfBoard;
+    }
+
+    function keyUpHandler(e) {
+        if (e.keyCode == 39) {
+            rightPressed = false;
+        } else if (e.keyCode == 37) {
+            leftPressed = false;
+        } else if (e.keyCode == 32) {
+            spacePressed = false;
+        } else if (e.keyCode == 40) {
+            downPressed = false;
+        }
+    }
+
+    function draw() {
+
+
+        if (moveNotFeasible(x, y, s, r) || initialMove) {
+            if (!initialMove) {
+                squarePermanent(x, y, s, r);
+            }
+            initialMove = false;
+
+            for (var e in board) {
+                if (board[0][e] === 2) {
+
+                    if (result == true) {
+                        document.location.reload(true);
+                    }
+                    else {
+                        $("#myModal").modal();
+                        isPaused = true;
+                    }
+
+                }
+            }
+
+            makeANewMove();
+        }
+        else {
+            makeAnotherMove();
+        }
+
+        var fullRow = isThereACompleteRow();
+
+        if (fullRow) {
+
+            moveAboveRowsDown(fullRow);
+            clearSpace();
+            var j = 150, d = 0;
+            createSquare(j, d);
+            score += Object.keys(fullRow).length * 10;
+            document.getElementById('scoreNumber').innerHTML = score.toString();
+
+        }
+    }
+
+
+    interval = setInterval(function () {
+        if (!isPaused) {
+            draw();
+        }
+    }, speed);
+
+    $(document).ready(function () {
+        $('.pause').on('click', function (e) {
+            e.preventDefault();
+            isPaused = true;
+        });
+        $('.play').on('click', function (e) {
+            e.preventDefault();
+            isPaused = false;
+        });
+        $('#Yes').on('click', function (e) {
+            e.preventDefault();
+            isPaused = false;
+            result = true;
+        });
+        $('#No').on('click', function (e) {
+            e.preventDefault();
+            isPaused = true;
+        });
+    });
+
+</script>
+
+</html>
+
+
+
+
+
